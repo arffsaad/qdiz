@@ -14,6 +14,11 @@
             "Arffsaad\\Qdiz\\": "src/"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "Arffsaad\\Qdiz\\Tests\\": "tests/"
+        }
+    },
     "authors": [
         {
             "name": "Ariff Saad"
@@ -26,5 +31,8 @@
     "scripts": {
         "qdiz:create-job": "@php vendor/bin/create-job",
         "qdiz:work": "@php vendor/bin/worker"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^12.4"
     }
 }

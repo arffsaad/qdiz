@@ -25,10 +25,13 @@ abstract class Qdiz
      */
     public function __construct()
     {
+        $host = getenv('REDIS_HOST') ?: ($_ENV['REDIS_HOST'] ?? '127.0.0.1');
+        $port = getenv('REDIS_PORT') ?: ($_ENV['REDIS_PORT'] ?? 6379);
+
         if (!self::$sharedRedis) {
             self::$sharedRedis = new Client([
-                'host' => $_ENV['REDIS_HOST'] ?? "127.0.0.1",
-                'port' => $_ENV['REDIS_PORT'] ?? 6379,
+                'host' => $host,
+                'port' => $port,
             ]);
         }
 

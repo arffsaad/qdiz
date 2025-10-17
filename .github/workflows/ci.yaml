@@ -1,0 +1,73 @@
+# .github/workflows/main.yml
+
+name: CI & Release
+
+# This workflow runs on pushes to the main branch and on any pull request.
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    # test against multiple PHP versions
+    strategy:
+      matrix:
+        php-versions: ['8.2', '8.3']
+
+    # service container for Redis
+    services:
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      # 1. Check out the repository code.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Set up the specified PHP version.
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-versions }}
+          extensions: mbstring, pdo, redis
+          coverage: none
+
+      # 3. Install Composer dependencies.
+      - name: Install Dependencies
+        run: composer install --prefer-dist --no-progress
+
+      # 4. Run the PHPUnit tests.
+      - name: Run Tests
+        env:
+          REDIS_HOST: redis
+          REDIS_PORT: 6379
+          REDIS_DB: 15 
+        run: ./vendor/bin/phpunit
+
+  # The 'release' job creates a GitHub Release when a new tag is pushed.
+  release:
+    runs-on: ubuntu-latest
+    # This job only runs if the 'test' job was successful.
+    needs: test
+    # This job only runs when a tag is pushed (e.g., v1.0.1).
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      # 1. Check out the repository code.
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Create a GitHub Release using the tag information.
+      # This action automatically generates release notes based on your commit messages.
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
