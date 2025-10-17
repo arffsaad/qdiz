@@ -3,7 +3,6 @@
          xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/10.0/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
-         cacheDirectory=".phpunit.cache"
 >
     <testsuites>
         <testsuite name="Qdiz Test Suite">
@@ -11,11 +10,11 @@
         </testsuite>
     </testsuites>
 
-    <source>
+    <coverage>
         <include>
             <directory suffix=".php">src</directory>
         </include>
-    </source>
+    </coverage>
 
     <php>
         <env name="REDIS_HOST" value="localhost"/>
