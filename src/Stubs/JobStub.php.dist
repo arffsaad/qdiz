@@ -1,0 +1,44 @@
+<?php
+
+namespace NamespacePlaceholder;
+
+use Arffsaad\Qdiz\Qdiz;
+
+class JobNamePlaceholder extends Qdiz
+{
+    /** @var string $queueName The queue name for this job, determines the queue for the worker. */
+    protected string $queueName = 'default';
+
+    protected function onProcess(): void
+    {
+        /**
+         * Your job processing logic here. Throw an exception within this method to `fail` the job.
+         * On completion of the job, onSuccess will be called.
+         * On failure, onFail will be called.
+         */
+    }
+
+    protected function onSuccess(): void
+    {
+        /** Post Job routine on success */
+    }
+
+    protected function onFail(\Throwable $th): void
+    {
+        /** Post Job routine on failure */
+    }
+
+    protected function deadJob(): void
+    {
+        /**
+         * Jobs have a maximum of 3 retries. After 3 retries, this method will be called.
+         * 
+         * You can either:
+         * - Dump the job to a dead queue in DB
+         * - Delete the job
+         * - Notify webhooks
+         * - Do nothing.
+         */
+    }
+
+}

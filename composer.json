@@ -1,0 +1,30 @@
+{
+    "name": "arffsaad/qdiz",
+    "description": "A simple no-framework redis queue system. Not using a framework but need a redis queue for delayed execution of long running tasks? Just qdiz (nuts).",
+    "type": "library",
+    "require": {
+        "predis/predis": "^3.2",
+        "symfony/process": "^7.3",
+        "symfony/console": "^7.3",
+        "symfony/dotenv": "^7.3"
+    },
+    "license": "GPL-3.0-only",
+    "autoload": {
+        "psr-4": {
+            "Arffsaad\\Qdiz\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Ariff Saad"
+        }
+    ],
+    "bin": [
+        "src/Console/create-job.php",
+        "src/Console/worker.php"
+    ],
+    "scripts": {
+        "qdiz:create-job": "@php vendor/bin/create-job",
+        "qdiz:work": "@php vendor/bin/worker"
+    }
+}
