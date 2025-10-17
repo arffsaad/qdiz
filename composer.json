@@ -3,6 +3,7 @@
     "description": "A simple no-framework redis queue system. Not using a framework but need a redis queue for delayed execution of long running tasks? Just qdiz (nuts).",
     "type": "library",
     "require": {
+        "php": ">=8.0",
         "predis/predis": "^3.2",
         "symfony/process": "^7.3",
         "symfony/console": "^7.3",
@@ -33,6 +34,14 @@
         "qdiz:work": "@php vendor/bin/worker"
     },
     "require-dev": {
-        "phpunit/phpunit": "^12.4"
+        "phpunit/phpunit": "^9.5 || ^10.0 || ^11.0 || ^12.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": true
+        },
+        "platform": {
+            "php": "8.0"
+        }
     }
 }
