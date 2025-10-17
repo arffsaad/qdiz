@@ -53,6 +53,7 @@ class QdizTest extends TestCase
     {
         $reflection = new \ReflectionClass($job);
         $redisProperty = $reflection->getProperty('redis');
+        $redisProperty->setAccessible(true);
         $redisProperty->setValue($job, $this->redis);
     }
 
