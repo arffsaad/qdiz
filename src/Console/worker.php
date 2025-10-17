@@ -1,6 +1,6 @@
 #!/usr/bin/env php
 <?php
-require dirname(__DIR__, 3) . '/autoload.php';
+require dirname(__DIR__, 4) . '/autoload.php';
 
 use Symfony\Component\Console\Application;
 use Symfony\Component\Dotenv\Dotenv;

@@ -37,18 +37,11 @@ REDIS_PORT=6379
 
 #### 1. Create a Job
 
-Use the provided command to generate a new job class. You can call the script directly or use the Composer script alias.
+Use the provided command to generate a new job class. 
 
-- Directly:
 ```
-// Usage: vendor/bin/create-job <ClassName> [Namespace] [OutputDirectory]
-vendor/bin/create-job SendWelcomeEmail App\\Jobs app/Jobs
-```
-
-- Via Composer:
-```
-// Note the '--' to pass arguments to the script
-composer qdiz:create-job -- SendWelcomeEmail App\\Jobs app/Jobs
+// Usage: vendor/bin/create-job.php <ClassName> [Namespace] [OutputDirectory]
+vendor/bin/create-job.php SendWelcomeEmail App\\Jobs app/Jobs
 ```
 
 This will create a new file at `app/Jobs/SendWelcomeEmail.php`.
@@ -139,19 +132,11 @@ echo "Job has been dispatched to the '{$job->getQueue()}' queue.";
 
 #### 4. Run the Worker
 
-Start the queue worker to process jobs. The worker will listen for jobs on the queue you specify and execute them as they arrive. You can call the worker directly or use the Composer script alias.
+Start the queue worker to process jobs. The worker will listen for jobs on the queue you specify and execute them as they arrive.
 
-
-- Directly:
 ```
 // Run the worker for the 'emails' queue
-vendor/bin/worker emails
-```
-
-- Via Composer:
-```
-// Note the '--' to pass arguments to the script
-composer qdiz:work -- emails
+vendor/bin/worker.php emails
 ```
 
 The worker will run continuously, processing jobs as they are added to the queue.

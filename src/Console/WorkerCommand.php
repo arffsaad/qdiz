@@ -19,6 +19,7 @@ class WorkerCommand extends Command
 
     protected function configure(): void
     {
+        $this->setName(static::$defaultName);
         $this->addArgument(
             'queue-name', // Corrected argument name to match usage in execute()
             InputArgument::OPTIONAL,
@@ -136,7 +137,7 @@ class WorkerCommand extends Command
      */
     protected function spawnSubprocess(string $payload, OutputInterface $output): void
     {
-        $consoleEntryPoint = 'vendor/bin/qdiz-worker';
+        $consoleEntryPoint = dirname(__DIR__, 4) . '/bin/worker.php';
 
         $commandParts = [
             PHP_BINARY,
