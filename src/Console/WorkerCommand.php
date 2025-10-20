@@ -13,15 +13,16 @@ use Throwable;
 
 class WorkerCommand extends Command
 {
-    // Rename for clarity in your package
     protected static $defaultName = 'qdiz:work';
     protected static $defaultDescription = 'Start a Qdiz queue worker for a specified queue.';
+
+    protected Client $client;
 
     protected function configure(): void
     {
         $this->setName(static::$defaultName);
         $this->addArgument(
-            'queue-name', // Corrected argument name to match usage in execute()
+            'queue-name',
             InputArgument::OPTIONAL,
             'The name of the queue to process.',
             'default'
@@ -49,22 +50,19 @@ class WorkerCommand extends Command
             );
     }
 
-    protected Client $client;
-
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
-        // Note: Corrected variable name from 'queue' to 'queue-name' for proper Symfony argument retrieval
-        $queueName = $input->getArgument('queue-name'); 
+        $queueName = $input->getArgument('queue-name');
         $sleepTime = (int)$input->getOption('sleep');
         $useSubprocess = (bool)$input->getOption('subprocess');
         $payloadOption = $input->getOption('payload');
 
-        // Case 1: Child Process Execution
+        // Child Process Execution
         if ($payloadOption !== null) {
             return $this->processJobInChild($payloadOption, $output);
         }
 
-        // Case 2: Main Worker Loop Mode
+        // Main Worker Loop Mode
         $output->writeln("<info>Starting Qdiz worker on queue: <comment>$queueName</comment></info>");
 
         // Initialize Redis Client
@@ -74,8 +72,8 @@ class WorkerCommand extends Command
         ]);
 
         while (true) {
-            // Blocking pop for 5 seconds (or whatever value is specified in blpop)
-            $job = $this->client->blpop($queueName, 5); 
+            // Blocking pop for 5 seconds
+            $job = $this->client->blpop($queueName, 5);
 
             if ($job) {
                 try {
@@ -84,8 +82,8 @@ class WorkerCommand extends Command
                     if ($useSubprocess) {
                         $this->spawnSubprocess($payload, $output);
                     } else {
-                        // This path bypasses the fresh-process requirement
-                        $this->processJobInParent($payload, $output); 
+                        // When not using a subprocess, execute the job directly.
+                        $this->processJobInParent($payload, $output);
                     }
                 } catch (Throwable $e) {
                     $output->writeln("<error>Worker Loop Error: " . $e->getMessage() . "</error>");
@@ -100,31 +98,34 @@ class WorkerCommand extends Command
     }
 
     /**
-     * Executes the job logic in the spawned child process.
+     * The core logic for handling a job payload. This is shared by both
+     * child (subprocess) and parent (inline) execution modes.
+     */
+    private function runJob(string $payload, OutputInterface $output): void
+    {
+        $data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
+        $jobClass = $data['jobClass'];
+
+        /** @var \Arffsaad\Qdiz\Qdiz $instance */
+        $instance = $jobClass::fromQueue($data);
+
+        $output->writeln("<info>-> Processing job: <comment>{$jobClass}</comment></info>");
+
+        $instance->handle();
+
+        if ($instance->failed()) {
+            throw new \RuntimeException("Job failed during execution or was marked as failed.");
+        }
+    }
+
+    /**
+     * Executes the job logic in the spawned child process. This function
+     * acts as a wrapper around runJob() to return a command exit code.
      */
     protected function processJobInChild(string $payload, OutputInterface $output): int
     {
-        // This process is designed to run and exit, ensuring a fresh environment and resources.
         try {
-            $data = json_decode($payload, true, 512, JSON_THROW_ON_ERROR);
-            $jobClass = $data['jobClass'];
-
-            // NOTE: The user's application needs to ensure database/resource configuration 
-            // is loaded before this point, likely in the worker.php shim or a global bootstrap file.
-            
-            /** @var \Arffsaad\Qdiz\Qdiz $instance */
-            $instance = $jobClass::fromQueue($data);
-
-            $output->writeln("<info>-> Processing job: <comment>{$jobClass}</comment></info>");
-
-            // Execute the job's lifecycle methods
-            $instance->handle();
-
-            if ($instance->failed()) {
-                // If handle() called retry() too many times, instance is marked failed.
-                throw new \RuntimeException("Job failed during execution or was marked as failed.");
-            }
-
+            $this->runJob($payload, $output);
             return Command::SUCCESS;
         } catch (Throwable $e) {
             $output->writeln("<error>-> Child Process Failure: " . $e->getMessage() . "</error>");
@@ -133,10 +134,23 @@ class WorkerCommand extends Command
     }
 
     /**
-     * Spawns a new process to execute the job using the internal payload option.
+     * Executes the job logic directly within the main worker process.
+     * This function is a simple wrapper around runJob(). Exceptions are
+     * caught by the main execute() loop.
+     */
+    protected function processJobInParent(string $payload, OutputInterface $output): void
+    {
+        $this->runJob($payload, $output);
+        $output->writeln("<info>-> Finished job (inline)</info>");
+    }
+
+    /**
+     * Spawns a new process to execute the job using the internal --payload option.
      */
     protected function spawnSubprocess(string $payload, OutputInterface $output): void
     {
+        // Assumes your console entry point is in a 'bin' directory
+        // Adjust this path if your project structure is different.
         $consoleEntryPoint = dirname(__DIR__, 4) . '/bin/worker.php';
 
         $commandParts = [
@@ -146,7 +160,7 @@ class WorkerCommand extends Command
             '--payload=' . $payload,
         ];
 
-        // --- Env Fix: Pass all environment variables explicitly ---
+        // Pass all environment variables from the parent to the child process.
         $fullEnv = array_merge($_SERVER, $_ENV);
 
         $process = new Process(
@@ -160,6 +174,7 @@ class WorkerCommand extends Command
         try {
             $output->writeln("<comment>Spawning subprocess for job...</comment>");
 
+            // Run the process and stream its output directly to the main console.
             $process->run(function ($type, $buffer) use ($output) {
                 $output->write($buffer);
             });
