@@ -38,6 +38,12 @@ abstract class Qdiz
         $this->redis = self::$sharedRedis;
     }
 
+    /**
+     * After "pop" from Redis, use this to get a job instance. Pass the whole job payload data to the method.
+     *
+     * @param array $payload
+     * @return self
+     */
     public static function fromQueue(array $payload): self
     {
         $job = new static();
@@ -57,60 +63,119 @@ abstract class Qdiz
         return $this->data[$name] ?? null;
     }
 
+    /**
+     * Get the queue name.
+     *
+     * @return string
+     */
     public function getQueue(): string
     {
         return $this->queueName;
     }
 
+    /**
+     * Get the current number of retries.
+     *
+     * @return integer
+     */
     public function getRetries(): int
     {
         return $this->retries;
     }
 
+    /**
+     * Get the job payload data.
+     *
+     * @return array
+     */
     public function getData(): array
     {
         return $this->data;
     }
 
+    /**
+     * Mass assign job data. This OVERWRITES existing data.
+     *
+     * @param array $data
+     * @return self
+     */
     public function setData(array $data): self
     {
         $this->data = $data;
         return $this;
     }
 
+    /** 
+     * Override the queue name for the job.
+     * 
+     * @param string $queueName
+     * @return self
+     */
     public function setQueue(string $queueName): self
     {
         $this->queueName = $queueName;
         return $this;
     }
 
+    /**
+     * Override the retry count for the job.
+     *
+     * @param integer $retries
+     * @return self
+     */
     public function setRetries(int $retries): self
     {
         $this->retries = $retries;
         return $this;
     }
 
+    /**
+     * Override the maximum retries allowed for the job. Jobs have a default of 3 retries.
+     *
+     * @param integer $maxRetries
+     * @return self
+     */
     public function setMaxRetries(int $maxRetries): self
     {
         $this->maxRetries = $maxRetries;
         return $this;
     }
 
+    /**
+     * Check if a job can be retried.
+     *
+     * @return boolean
+     */
     public function isRetriable(): bool
     {
         return $this->getRetries() < $this->maxRetries;
     }
 
+    /**
+     * Check if the job has been processed.
+     *
+     * @return boolean
+     */
     public function completed(): bool
     {
         return $this->processed;
     }
 
+    /**
+     * Check if the job is processed AND failed.
+     *
+     * @return boolean|null
+     */
     public function failed(): ?bool
     {
         return $this->failed;
     }
 
+    /**
+     * Check if the job is processed AND succeeded.
+     *
+     * @return boolean|null
+     */
     public function success(): ?bool
     {
         return $this->success;
@@ -155,6 +220,8 @@ abstract class Qdiz
 
     /**
      * Retry the job at the front of the queue, with a 5-second delay.
+     * 
+     * @return bool True if the job was retried, false if it reached max retries.
      */
     public function retry(): bool
     {
@@ -212,12 +279,17 @@ abstract class Qdiz
     /**
      * Called when the job succeeds.
      * You can override this to perform side-effects.
+     * 
+     * @return void
      */
     abstract protected function onSuccess(): void;
 
     /**
      * Called when the job fails.
      * You can override this to handle errors or logging.
+     * 
+     * @param \Throwable $e The exception that caused the failure.
+     * @return void
      */
     abstract protected function onFail(\Throwable $e): void;
 
