@@ -4,6 +4,7 @@ namespace Arffsaad\Qdiz\Console;
 
 use Predis\Client;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Command\LazyCommand;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -18,9 +19,26 @@ class WorkerCommand extends Command
 
     protected Client $client;
 
+    /**
+     * When registered as part of another console application, this command will be lazyloaded to reduce memory usage.
+     *
+     * @return LazyCommand
+     */
+    public static function getLazyCommand(): LazyCommand
+    {
+        return new LazyCommand(
+            static::$defaultName,
+            [],
+            static::$defaultDescription,
+            false,
+            static fn(): Command => new static(),
+        );
+    }
+
     protected function configure(): void
     {
         $this->setName(static::$defaultName);
+        $this->setDescription(static::$defaultDescription);
         $this->addArgument(
             'queue-name',
             InputArgument::OPTIONAL,
@@ -149,9 +167,7 @@ class WorkerCommand extends Command
      */
     protected function spawnSubprocess(string $payload, OutputInterface $output): void
     {
-        // Assumes your console entry point is in a 'bin' directory
-        // Adjust this path if your project structure is different.
-        $consoleEntryPoint = dirname(__DIR__, 4) . '/bin/worker.php';
+        $consoleEntryPoint = realpath($_SERVER['argv'][0]);
 
         $commandParts = [
             PHP_BINARY,
@@ -184,6 +200,8 @@ class WorkerCommand extends Command
             }
         } catch (Throwable $e) {
             $output->writeln("<error>Subprocess execution failed: " . $e->getMessage() . "</error>");
+        } finally {
+            $output->writeln("<info>-> Execution for job in subprocess finished</info>");
         }
     }
 }
